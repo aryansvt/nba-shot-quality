@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "shot-quality"
 version = "1.0.0"
 description = "Expected FG% model for 2014-15 NBA SportVU shot logs"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [{ name = "Aryan Achar" }]
 
 [tool.setuptools.packages.find]

@@ -89,7 +89,7 @@ def write_json(path: Path, obj, pretty: bool = False) -> None:
     text = json.dumps(obj, default=default, allow_nan=False,
                       indent=2 if pretty else None,
                       separators=None if pretty else (",", ":"))
-    path.write_text(text + "\n", encoding="utf-8")
+    path.write_text(text + "\n", encoding="utf-8", newline="\n")
     log(f"  wrote {path.as_posix()} ({path.stat().st_size / 1024:.0f} KB)")
 
 
