@@ -31,30 +31,30 @@ What the numbers say:
 
 ### Shot-making over expected
 
-A second model, trained without the shooter's identity, gives each shot an expected make probability. Actual minus expected FG% measures shot-making (players with 200+ shots). The ± column is the 95% range that luck alone would produce for that shot count.
+A second model, trained without the shooter's identity, gives each shot an expected make probability. The predictions are out-of-fold, so every expected value is out-of-sample: 5-fold cross-validation, with each shot scored by a model trained on the other four folds. Without the shooter, that model still reaches an AUC of 0.642. Actual minus expected FG% measures shot-making (players with 200+ shots). The ± column is the 95% range that luck alone would produce for that shot count.
 
 | Player | Shots | FG% | xFG% | Over expected | Noise band |
 |---|---|---|---|---|---|
-| Kyle Korver | 478 | 49.2 | 38.2 | +10.9 | ±4.3 |
+| Kyle Korver | 478 | 49.2 | 38.2 | +11.0 | ±4.3 |
 | James Johnson | 311 | 61.4 | 51.6 | +9.8 | ±5.3 |
 | Alexis Ajinca | 211 | 59.7 | 51.9 | +7.8 | ±6.5 |
-| DeAndre Jordan | 393 | 71.3 | 64.0 | +7.3 | ±4.5 |
+| DeAndre Jordan | 393 | 71.3 | 63.7 | +7.5 | ±4.5 |
 | Chris Paul | 885 | 48.0 | 41.0 | +7.0 | ±3.2 |
 | ... | | | | | |
 | Nerlens Noel | 444 | 44.4 | 52.7 | -8.3 | ±4.4 |
-| Joakim Noah | 340 | 43.8 | 53.4 | -9.6 | ±5.1 |
-| Tony Allen | 358 | 48.0 | 58.3 | -10.2 | ±4.8 |
-| Ramon Sessions | 219 | 32.9 | 43.8 | -11.0 | ±6.4 |
-| Omer Asik | 300 | 50.7 | 62.4 | -11.7 | ±5.3 |
+| Joakim Noah | 340 | 43.8 | 53.1 | -9.3 | ±5.1 |
+| Tony Allen | 358 | 48.0 | 58.2 | -10.2 | ±4.8 |
+| Ramon Sessions | 219 | 32.9 | 43.9 | -11.0 | ±6.4 |
+| Omer Asik | 300 | 50.7 | 62.5 | -11.8 | ±5.3 |
 
-45 of 248 players fall outside their noise band, where about 12 would by chance. The ends of the list carry real signal; the middle mostly doesn't.
+46 of 248 players fall outside their noise band, where about 12 would by chance. The ends of the list carry real signal; the middle mostly doesn't.
 
 ### Limits
 
 - AUC 0.64 is modest. Shot quality is noisy, and PCA shows made and missed shots overlapping almost everywhere.
 - The data has no x/y shot location, shot type, play type or help defense. Closest defender is measured only at the moment of the shot.
 - It covers one partial season (October 2014 to early March 2015).
-- As in the notebook, the leaderboard pools train and test predictions, so 80% of expected values are in-sample.
+- The leaderboard measures making shots, not creating them. A player who gets easy looks is judged against an easy baseline.
 
 ## Screenshots
 
@@ -126,7 +126,8 @@ npm run preview   # serve web/out locally
 
 ## Reproducibility notes
 
-- Versions are pinned in `requirements.txt`. The package matches the notebook to four decimals on every metric for every model except tuned XGBoost, which is within 0.0002. None of the XGBoost versions tested (2.0 through 3.4) reproduced that one model bit-for-bit. The same best hyperparameters are found, the SHAP values match, and the player leaderboard matches.
+- Versions are pinned in `requirements.txt`. The package matches the notebook to four decimals on every metric for every model except tuned XGBoost, which is within 0.0002. None of the XGBoost versions tested (2.0 through 3.4) reproduced that one model bit-for-bit. The same best hyperparameters are found and the SHAP values match.
+- The player leaderboard deliberately departs from the notebook. The notebook pooled test predictions with in-sample predictions on its own training rows (80% of shots). The package scores every shot out-of-fold with `cross_val_predict`, and the defender encoding is re-fit inside each fold so no held-out result leaks into it. The change turned out to be small: player residuals moved by 0.11 points on average (0.38 at most), rank correlation with the notebook's list is 0.999, and the top 10 and bottom 10 are the same players.
 - The notebook saves and reloads CSVs between steps, and pandas' default float parser can land one ulp away from the original value. That is enough to move a few LightGBM histogram bins, so the package mirrors the round trip in memory (`csv_roundtrip` in `data.py`) to reproduce the notebook exactly.
 - The source data misspells some names (Dirk Nowtizski, Nerles Noel, Beno Urdih, and others). The site and this README show corrected names. Grouping uses player IDs, so results are unaffected.
 - Chart colors were checked for color-vision deficiency separation and contrast against the site's dark surface.
