@@ -2,7 +2,7 @@
 
 An expected field goal model for the 2014-15 NBA season. It estimates the chance a shot goes in from SportVU tracking data: shot distance, closest defender distance, shot clock, dribbles and touch time. The repo holds the analysis notebook, a Python package that reproduces it, and a static website that presents the results.
 
-**Live site:** _coming soon_ (placeholder: https://your-site.vercel.app)
+**Live site:** https://nba-shot-quality-model.vercel.app
 
 ![Hero section of the site](docs/screenshots/hero.jpg)
 
@@ -122,7 +122,7 @@ npm run preview   # serve web/out locally
 1. Push the repo to GitHub and import it in Vercel.
 2. Set **Root Directory** to `web`. Vercel detects Next.js, and no environment variables are needed.
 3. Deploy. The site is a static export, and the JSON it reads is committed, so Vercel never runs Python.
-4. Replace the placeholder URLs in `web/src/lib/site.ts` (GitHub repo and live URL, used for links and social previews) and the live link at the top of this README.
+4. If you deploy your own copy, update the GitHub and live URLs in `web/src/lib/site.ts`. The site uses them for its links and social previews.
 
 ## Reproducibility notes
 
