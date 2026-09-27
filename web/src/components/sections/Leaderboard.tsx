@@ -1,14 +1,18 @@
 import { PlayerExplorer } from "@/components/charts/PlayerExplorer";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { players } from "@/lib/data";
+import { metrics, players } from "@/lib/data";
 import { int, pct, pts } from "@/lib/format";
+
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const word = (n: number) => WORDS[n] ?? String(n);
 
 export function Leaderboard() {
   const list = players.players;
   const top = list[0];
   const beyond = list.filter((p) => Math.abs(p.diff) > 1.96 * p.se).length;
   const byChance = Math.round(list.length * 0.05);
+  const folds = players.cv_folds;
 
   const caveats = [
     {
@@ -16,8 +20,8 @@ export function Leaderboard() {
       body: `The whiskers show what luck alone does over a player's shot count. ${beyond} of ${list.length} players land outside them, against about ${byChance} you'd expect by chance. So the ends of the list carry real signal, but most of the middle sits inside the noise band.`,
     },
     {
-      title: "Expected values are partly in-sample",
-      body: `As in the notebook, train and test predictions are pooled for bigger samples, so ${pct(players.in_sample_share, 0)} of shots were scored by the model that learned from them. That can pull expected FG% toward the actual results.`,
+      title: "It measures making shots, not getting them",
+      body: "Expected FG% is built from each player's own attempts, so someone who creates easy looks is judged against an easy baseline. Shot creation is a separate skill this list doesn't credit.",
     },
     {
       title: "The model can't see shot type",
@@ -32,6 +36,12 @@ export function Leaderboard() {
           A second LightGBM model is trained without knowing who took the shot. Its prediction is what an average
           player would make from the same distance, spacing and clock. Actual FG% minus that expected FG% is
           shot-making, the same idea as expected goals in soccer.
+        </p>
+        <p>
+          Every expected value is out-of-sample. The shots are split into {word(folds)} groups, and each group is
+          scored by a model trained on the other {word(folds - 1)}. Without knowing who shot, that model still
+          reaches an AUC of {players.situation.auc.toFixed(3)}, about the same as the main model&apos;s{" "}
+          {metrics.headline.auc.toFixed(3)}.
         </p>
         <p>
           {top.name} leads: {pct(top.actual)} on shots worth {pct(top.expected)} for an average player,{" "}

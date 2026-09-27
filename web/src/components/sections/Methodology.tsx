@@ -84,7 +84,8 @@ export function Methodology() {
         <p>
           The notebook is the full record: data cleaning, EDA, PCA and t-SNE, five baselines, tuning, SHAP, and
           the player analysis. A Python package reproduces it, and one export script writes every number on this
-          page.
+          page. One deliberate change: the notebook scored most leaderboard shots in-sample, while this page uses
+          out-of-fold predictions. Player numbers moved by about a tenth of a point on average.
         </p>
       </SectionHeader>
 

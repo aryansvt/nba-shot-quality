@@ -9,15 +9,16 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from xgboost import XGBClassifier
 
 from .config import (
-    BINARY, CATEGORICAL, CV_FOLDS, LGB_FIXED, N_SEARCH, NUMERIC, SEED, TEST_SIZE, XGB_FIXED,
+    BINARY, CATEGORICAL, CV_FOLDS, LGB_FIXED, N_SEARCH, NUMERIC, SEED, SITUATION_FOLDS, XGB_FIXED,
 )
-from .features import Matrices, oof_encode, smoothed_mean
+from .features import Matrices, SmoothedTargetEncoder
 
 
 def baseline_models() -> dict:
@@ -98,43 +99,36 @@ def fit_tuned(m: Matrices, xgb_params: dict, lgb_params: dict):
 
 
 def situation_expected(df: pd.DataFrame) -> pd.DataFrame:
-    """expected make probability for every shot from a model that never sees the shooter.
+    """out-of-fold expected make probability for every shot, from a model that never sees the shooter.
 
     player skill is left out on purpose so it shows up in actual minus expected.
-    train and test predictions are pooled for bigger per-player samples, as in the notebook.
+    each shot is scored by a model trained on the other folds, so every expected
+    value is out-of-sample. (the notebook pooled in-sample train predictions with
+    test predictions instead.)
     """
-    X2 = df[NUMERIC + BINARY + CATEGORICAL + ["CLOSEST_DEFENDER_PLAYER_ID"]].copy()
-    y2 = df["FGM"].copy()
-    X2_tr, X2_te, y2_tr, y2_te, id_tr, id_te, nm_tr, nm_te = train_test_split(
-        X2, y2, df["player_id"], df["player_name"],
-        test_size=TEST_SIZE, random_state=SEED, stratify=y2)
-
-    # defender encoding is fine, we are measuring the shooter
-    prior2 = y2_tr.mean()
-    def_map = smoothed_mean(X2_tr["CLOSEST_DEFENDER_PLAYER_ID"], y2_tr, prior2)
-    X2_tr["DEFENDER_ENC"] = oof_encode(X2_tr["CLOSEST_DEFENDER_PLAYER_ID"], y2_tr).values
-    X2_te["DEFENDER_ENC"] = X2_te["CLOSEST_DEFENDER_PLAYER_ID"].map(def_map).fillna(prior2)
-    X2_tr = X2_tr.drop(columns=["CLOSEST_DEFENDER_PLAYER_ID"])
-    X2_te = X2_te.drop(columns=["CLOSEST_DEFENDER_PLAYER_ID"])
+    X = df[NUMERIC + BINARY + CATEGORICAL + ["CLOSEST_DEFENDER_PLAYER_ID"]]
+    y = df["FGM"]
 
     pre = ColumnTransformer([
-        ("num", "passthrough", NUMERIC + ["DEFENDER_ENC"]),
+        ("num", "passthrough", NUMERIC),
+        # defender encoding is fine, we are measuring the shooter. it lives in the
+        # pipeline so each fold re-learns it without seeing the held-out shots
+        ("def", SmoothedTargetEncoder(), ["CLOSEST_DEFENDER_PLAYER_ID"]),
         ("bin", "passthrough", BINARY),
         ("cat", OneHotEncoder(drop="first", sparse_output=False), CATEGORICAL),
     ])
-    X2_tr_arr = pre.fit_transform(X2_tr)
-    X2_te_arr = pre.transform(X2_te)
-
-    model = LGBMClassifier(n_estimators=200, num_leaves=15, max_depth=6,
-                           learning_rate=0.05, min_child_samples=20,
-                           random_state=SEED, n_jobs=-1, verbose=-1)
-    model.fit(X2_tr_arr, y2_tr)
+    model = Pipeline([
+        ("pre", pre),
+        ("lgbm", LGBMClassifier(n_estimators=200, num_leaves=15, max_depth=6,
+                                learning_rate=0.05, min_child_samples=20,
+                                random_state=SEED, n_jobs=-1, verbose=-1)),
+    ])
+    cv = StratifiedKFold(n_splits=SITUATION_FOLDS, shuffle=True, random_state=SEED)
+    expected = cross_val_predict(model, X, y, cv=cv, method="predict_proba")[:, 1]
 
     return pd.DataFrame({
-        "player_id": pd.concat([id_tr, id_te]).values,
-        "player_name": pd.concat([nm_tr, nm_te]).values,
-        "actual": pd.concat([y2_tr, y2_te]).values,
-        "expected": np.concatenate([model.predict_proba(X2_tr_arr)[:, 1],
-                                    model.predict_proba(X2_te_arr)[:, 1]]),
-        "in_train": np.concatenate([np.ones(len(y2_tr), bool), np.zeros(len(y2_te), bool)]),
+        "player_id": df["player_id"].to_numpy(),
+        "player_name": df["player_name"].to_numpy(),
+        "actual": y.to_numpy(),
+        "expected": expected,
     })

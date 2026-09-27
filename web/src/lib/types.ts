@@ -73,7 +73,8 @@ export type Player = {
 export type Players = {
   min_shots: number;
   count: number;
-  in_sample_share: number;
+  cv_folds: number;
+  situation: { auc: number; log_loss: number };
   players: Player[];
 };
 

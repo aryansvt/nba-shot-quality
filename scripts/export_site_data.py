@@ -24,8 +24,8 @@ from xgboost import XGBClassifier
 
 from shot_quality.config import (
     FEATURE_LABELS, FEATURE_UNITS, KNOWN_BEST_PARAMS, LGB_FIXED, LGB_GRID, MIN_SHOTS,
-    NOTEBOOK_PLAYERS, NOTEBOOK_REFERENCE, NOTEBOOK_SHAP_TOP, SEED, WEB_DIR, XGB_FIXED,
-    XGB_GRID, ZONE_ORDER,
+    NOTEBOOK_PLAYERS, NOTEBOOK_REFERENCE, NOTEBOOK_SHAP_TOP, SEED, SITUATION_FOLDS, WEB_DIR,
+    XGB_FIXED, XGB_GRID, ZONE_ORDER,
 )
 from shot_quality.data import load_clean
 from shot_quality.evaluate import (
@@ -249,8 +249,9 @@ def parity_report(results, best_xgb, best_lgb, shap_json, players) -> None:
     top, bottom = players.iloc[0], players.iloc[-1]
     log(f"  players: {len(players)} qualified (notebook {NOTEBOOK_PLAYERS['qualified']}), "
         f"top {top['player_name']} {top['over_expected'] * 100:+.2f}, "
-        f"bottom {bottom['player_name']} {bottom['over_expected'] * 100:+.2f} "
-        f"(notebook {NOTEBOOK_PLAYERS['top']}, {NOTEBOOK_PLAYERS['bottom']})")
+        f"bottom {bottom['player_name']} {bottom['over_expected'] * 100:+.2f}")
+    log(f"  reference only, notebook leaderboard used in-sample predictions: "
+        f"top {NOTEBOOK_PLAYERS['top']}, bottom {NOTEBOOK_PLAYERS['bottom']}")
     log(f"  largest metric diff: {worst:.4f}")
 
 
@@ -297,8 +298,9 @@ def main() -> None:
     X_shap, vals, base = shap_values(lgb_tuned, m.test_trees)
     shap_json = shap_payload(X_shap, vals, base, m.feature_names)
 
-    log("situation model and player residuals")
+    log(f"situation model ({SITUATION_FOLDS}-fold out-of-fold) and player residuals")
     shots = situation_expected(df)
+    situation = get_metrics(shots["actual"], shots["expected"].to_numpy())
     players = player_residuals(shots)
 
     log("context and predictor grid")
@@ -349,7 +351,9 @@ def main() -> None:
     players_json = {
         "min_shots": MIN_SHOTS,
         "count": len(players),
-        "in_sample_share": r(shots["in_train"].mean(), 2),
+        # every expected value comes from a model that never saw that shot
+        "cv_folds": SITUATION_FOLDS,
+        "situation": {"auc": r(situation["AUC"]), "log_loss": r(situation["LogLoss"])},
         "players": [{
             "id": int(p.player_id),
             "name": display_name(p.player_name),

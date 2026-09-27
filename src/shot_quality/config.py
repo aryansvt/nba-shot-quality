@@ -14,6 +14,7 @@ CV_FOLDS = 3        # folds for the hyperparameter search
 N_SEARCH = 6        # random configs tried per model
 SHAP_SAMPLE = 2000
 MIN_SHOTS = 200     # leaderboard qualification
+SITUATION_FOLDS = 5 # out-of-fold scoring for the leaderboard's no-identity model
 
 NUMERIC = [
     "SHOT_DIST", "SHOT_CLOCK", "CLOSE_DEF_DIST",
@@ -79,6 +80,8 @@ NOTEBOOK_SHAP_TOP = [
     ("LOG_TOUCH_TIME", 0.1109),
     ("CLOSE_DEF_DIST", 0.0856),
 ]
+# the notebook's leaderboard pooled in-sample predictions, the package uses out-of-fold ones,
+# so these are printed for reference only
 NOTEBOOK_PLAYERS = {"qualified": 248, "top": ("Kyle Korver", 10.92), "bottom": ("Omer Asik", -11.68)}
 
 # plain names for the site

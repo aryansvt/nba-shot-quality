@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -92,6 +93,38 @@ def encode_test(test_vals: pd.Series, train_vals: pd.Series, train_target: pd.Se
     prior = train_target.mean()
     enc_map = smoothed_mean(train_vals, train_target, prior, alpha)
     return test_vals.map(enc_map).fillna(prior)
+
+
+class SmoothedTargetEncoder(BaseEstimator, TransformerMixin):
+    """smoothed mean encoding of one id column that can sit inside a pipeline.
+
+    fit_transform encodes the training rows out-of-fold, so no row sees its own
+    label. transform encodes new rows with the map learned from all training rows.
+    """
+
+    def __init__(self, alpha: int = ALPHA, n_folds: int = ENCODE_FOLDS):
+        self.alpha = alpha
+        self.n_folds = n_folds
+
+    def fit(self, X, y):
+        vals, target = _id_and_target(X, y)
+        self.prior_ = float(target.mean())
+        self.map_ = smoothed_mean(vals, target, self.prior_, self.alpha)
+        return self
+
+    def transform(self, X):
+        vals = pd.DataFrame(X).iloc[:, 0]
+        return vals.map(self.map_).fillna(self.prior_).to_numpy().reshape(-1, 1)
+
+    def fit_transform(self, X, y=None, **fit_params):
+        self.fit(X, y)
+        vals, target = _id_and_target(X, y)
+        return oof_encode(vals, target, self.n_folds, self.alpha).to_numpy().reshape(-1, 1)
+
+
+def _id_and_target(X, y) -> tuple[pd.Series, pd.Series]:
+    vals = pd.DataFrame(X).iloc[:, 0]
+    return vals, pd.Series(np.asarray(y), index=vals.index)
 
 
 def target_encode(X_train: pd.DataFrame, X_test: pd.DataFrame, y_train: pd.Series):
