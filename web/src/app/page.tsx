@@ -1,7 +1,9 @@
 import { Nav } from "@/components/Nav";
 import { Explain } from "@/components/sections/Explain";
+import { Footer } from "@/components/sections/Footer";
 import { Hero } from "@/components/sections/Hero";
 import { Leaderboard } from "@/components/sections/Leaderboard";
+import { Methodology } from "@/components/sections/Methodology";
 import { Models } from "@/components/sections/Models";
 import { PredictorSection } from "@/components/sections/PredictorSection";
 
@@ -15,7 +17,9 @@ export default function Home() {
         <Explain />
         <Leaderboard />
         <PredictorSection />
+        <Methodology />
       </main>
+      <Footer />
     </>
   );
 }
