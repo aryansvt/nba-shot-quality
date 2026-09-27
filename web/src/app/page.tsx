@@ -1,7 +1,9 @@
 import { Nav } from "@/components/Nav";
 import { Explain } from "@/components/sections/Explain";
 import { Hero } from "@/components/sections/Hero";
+import { Leaderboard } from "@/components/sections/Leaderboard";
 import { Models } from "@/components/sections/Models";
+import { PredictorSection } from "@/components/sections/PredictorSection";
 
 export default function Home() {
   return (
@@ -11,6 +13,8 @@ export default function Home() {
         <Hero />
         <Models />
         <Explain />
+        <Leaderboard />
+        <PredictorSection />
       </main>
     </>
   );
