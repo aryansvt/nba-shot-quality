@@ -1,0 +1,44 @@
+{
+  "generated": "2026-09-27",
+  "dataset": {
+    "season": "2014-15",
+    "shots": 128069,
+    "players": 281,
+    "games": 904,
+    "made": 57905,
+    "missed": 70164,
+    "league_fg": 0.4521,
+    "train": 102455,
+    "test": 25614,
+    "features": 24
+  },
+  "headline": {
+    "model": "LightGBM (tuned)",
+    "accuracy": 0.6201,
+    "log_loss": 0.6476,
+    "brier": 0.2288,
+    "auc": 0.6392
+  },
+  "naive": {
+    "accuracy": 0.5479,
+    "log_loss": 0.6886,
+    "brier": 0.2477,
+    "auc": 0.5
+  },
+  "log_loss_gain": 0.0594,
+  "brier_gain": 0.0765,
+  "auc_spread": 0.0058,
+  "threshold": {
+    "best_f1_threshold": 0.28,
+    "best_f1": 0.6269,
+    "accuracy_at_0_5": 0.6201
+  },
+  "versions": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "lightgbm": "4.7.0",
+    "xgboost": "3.0.5",
+    "shap": "0.52.0"
+  }
+}
