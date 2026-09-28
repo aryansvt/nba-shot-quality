@@ -135,3 +135,7 @@ npm run preview   # serve web/out locally
 ## Data
 
 [NBA shot logs](https://www.kaggle.com/datasets/dansbecker/nba-shot-logs) on Kaggle, collected from NBA.com's SportVU player tracking for the 2014-15 regular season (through early March 2015). This project is not affiliated with the NBA.
+
+---
+
+_Last updated: 2026-09-28_
